@@ -1,0 +1,34 @@
+{
+  "users": [
+    {
+      "_id": "851da46f-8cc3-4807-b0cb-5518148d4ce3",
+      "name": "Ismail B",
+      "email": "i@gmail.com",
+      "password": "123",
+      "avatar": "https://i.pravatar.cc/100?img=2",
+      "isOnline": true,
+      "lastSeen": "2025-07-18T13:07:17.853Z",
+      "createdAt": "2025-07-18T11:03:43.175Z"
+    },
+    {
+      "_id": "9750c428-c0c5-4a77-919e-0345da8886d7",
+      "name": "Ismail2 B",
+      "email": "i2@gmail.com",
+      "password": "123",
+      "avatar": "https://i.pravatar.cc/100?img=2",
+      "isOnline": true,
+      "lastSeen": "2025-07-18T13:11:10.756Z",
+      "createdAt": "2025-07-18T11:58:17.514Z"
+    },
+    {
+      "_id": "ccaee64f-9a5c-442d-a72a-91b6b3ec84c3",
+      "name": "Ismail3 B",
+      "email": "i3@gmail.com",
+      "password": "123",
+      "avatar": "https://i.pravatar.cc/100?img=2",
+      "isOnline": false,
+      "lastSeen": "2025-07-18T12:13:10.243Z",
+      "createdAt": "2025-07-18T12:09:27.319Z"
+    }
+  ]
+}
