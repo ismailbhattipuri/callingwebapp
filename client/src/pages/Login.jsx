@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useApi } from "../context/ApiContext";
-import socket from "../socket";
-
-
 
 const Login = () => {
   const navigate = useNavigate();
@@ -36,12 +33,10 @@ const Login = () => {
 
       // ✅ Save user in sessionStorage
       sessionStorage.setItem("user", JSON.stringify(user));
-
-      // ✅ Emit socket event to mark user online
-      socket.emit("register", user._id);
-
       // ✅ Redirect to homepage
       navigate("/");
+      // reload the page
+      window.location.reload();
     } catch (err) {
       setMessage(`❌ ${err.response?.data?.error || "Login failed"}`);
     }
@@ -86,7 +81,10 @@ const Login = () => {
         </button>
       </form>
       <p className="text-sm text-center text-gray-500 mt-4">
-        Don’t have an account? <Link to="/register" className="text-blue-600 cursor-pointer">Register</Link>
+        Don’t have an account?{" "}
+        <Link to="/register" className="text-blue-600 cursor-pointer">
+          Register
+        </Link>
       </p>
     </div>
   );

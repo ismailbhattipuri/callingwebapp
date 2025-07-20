@@ -1,101 +1,188 @@
+// post http://localhost:8000/api/auth/register
+// post http://localhost:8000/api/auth/login
+
+// get  http://localhost:8000/api/user/users
+// get http://localhost:8000/api/user/users/e0c73602-e3bb-44a9-a02b-8a6404fb7e46
+
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
-const { Server } = require("socket.io");
 const http = require("http");
-const { updateUserStatus } = require("./controllers/callController");
-
-const connectedUsers = {};
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config();
+const { getUserByEmail } = require("./controllers/callController");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-const server = http.createServer(app);
-
-// Middlewares
+// Middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
-const sampleRoutes = require("./routes/sampleRoutes");
-const authRoutes = require("./routes/authRoutes"); // ⬅️ Add this line
+const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
 
-app.use("/api/sample", sampleRoutes);
-app.use("/api/auth", authRoutes); // ⬅️ Register auth route
+// Create HTTP Server
+const server = http.createServer(app);
 
-// Start server
-// app.listen(PORT, () => {
-//   console.log(`🚀 Server running on http://localhost:${PORT}`);
-// });
+// Attach Socket.IO
+const { Server } = require("socket.io");
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 
-// ==============================
+// Maps
+const emailToSocketIdMap = new Map();
+const socketIdToEmailMap = new Map();
+const idToSocketIdMap = new Map();
+const socketIdToUserMap = new Map();
 
+function getUserByEmailOrId(to) {
+  let socketId;
+
+  if (emailToSocketIdMap.has(to)) {
+    socketId = emailToSocketIdMap.get(to);
+  } else if (idToSocketIdMap.has(to)) {
+    socketId = idToSocketIdMap.get(to);
+  }
+
+  if (socketId) {
+    const user = socketIdToUserMap.get(socketId);
+    return { ...user, socketId };
+  }
+
+  return null;
+}
+
+// Socket.IO Logic
+io.on("connection", (socket) => {
+  console.log(`🔌 Socket Connected: ${socket.id}`);
+
+  // Join Room
+  socket.on("room:join", ({ email, room }) => {
+    const user = getUserByEmail(email);
+    if (!user) return;
+
+    emailToSocketIdMap.set(email, socket.id);
+    socketIdToEmailMap.set(socket.id, email);
+
+    socket.join(room);
+
+    // Notify others in the room
+    io.to(room).emit("user:joined", {
+      email,
+      id: socket.id,
+      user,
+    });
+
+    // Notify the user who joined
+    io.to(socket.id).emit("room:join", {
+      email,
+      room,
+      user,
+    });
+  });
+
+  // Call User to the joined the room
+  socket.on("user:call", ({ to, offer }) => {
+    const callerEmail = socketIdToEmailMap.get(socket.id);
+    const callerUser = getUserByEmail(callerEmail);
+    if (!callerUser) return;
+
+    io.to(to).emit("incomming:call", {
+      from: socket.id,
+      offer,
+      caller: callerUser,
+    });
+  });
+
+  // Accept Call
+  socket.on("call:accepted", ({ to, ans }) => {
+    io.to(to).emit("call:accepted", {
+      from: socket.id,
+      ans,
+    });
+  });
+
+  // WebRTC Negotiation
+  socket.on("peer:nego:needed", ({ to, offer }) => {
+    io.to(to).emit("peer:nego:needed", {
+      from: socket.id,
+      offer,
+    });
+  });
+
+  socket.on("peer:nego:done", ({ to, ans }) => {
+    io.to(to).emit("peer:nego:final", {
+      from: socket.id,
+      ans,
+    });
+  });
+
+  //phone call
+  socket.on("register", (user) => {
+    const { email, _id } = user;
+    if (email) emailToSocketIdMap.set(email, socket.id);
+    if (_id) idToSocketIdMap.set(_id, socket.id);
+
+    socketIdToUserMap.set(socket.id, { email, _id });
+
+    console.log(`✅ Registered ${_id || email} → ${socket.id}`);
+  });
+
+  socket.on("call:request", ({ to,offer }) => {
+    const callee = getUserByEmailOrId(to); // returns { email, _id }
+
+    const calleeSocketId =
+      (callee?.email && emailToSocketIdMap.get(callee.email)) ||
+      (callee?._id && idToSocketIdMap.get(callee._id));
+
+    console.log("calling not", calleeSocketId);
+
+    if (calleeSocketId) {
+      const caller = socketIdToUserMap.get(socket.id);
+      console.log(callee);
+
+      io.to(calleeSocketId).emit("call:incoming", {
+        fromEmail: caller?.email,
+        fromId: caller?._id,
+        fromSocketId: socket.id,
+        offer,
+      });
+
+      console.log("📞 Call request sent from", caller?.email, "to", to);
+    }
+  });
+
+  socket.on("call:accept", ({ to,answer }) => {
+    io.to(to).emit("call:accepted", { from: socket.id,answer });
+  });
+
+  socket.on("call:reject", ({ to }) => {
+    io.to(to).emit("call:rejected", {});
+  });
+
+  socket.on("call:hangup", () => {
+    // notify both sides (if stored in call state)
+    socket.broadcast.emit("call:hangup");
+  });
+
+  // Disconnect
+  socket.on("disconnect", () => {
+    console.log(`❌ Disconnected: ${socket.id}`);
+    const email = socketIdToEmailMap.get(socket.id);
+    emailToSocketIdMap.delete(email);
+    socketIdToEmailMap.delete(socket.id);
+  });
+});
+
+// Start Server
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
-
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173", // or your actual frontend URL
-    methods: ["GET", "POST"]
-  },
-  pingTimeout: 20000, // disconnect after 20s of inactivity
-  pingInterval: 10000  // ping every 10s
-});
-
-io.on("connection", (socket) => {
-  socket.on("register", (userId) => {
-    console.log("register")
-    socket.userId = userId;
-    connectedUsers[userId] = socket.id;
-    updateUserStatus(userId, true);
-  });
-
-  socket.on("call-user", ({ from, to }) => {
-    const callee = getUserById(to);
-    if (!callee || !callee.isOnline) {
-      socket.emit("call-failed", "User not available");
-      return;
-    }
-    if (from === to) {
-      socket.emit("call-failed", "You cannot call yourself");
-      return;
-    }
-
-    io.to(callee.socketId).emit("incoming-call", { from });
-  });
-
-  socket.on("accept-call", ({ from, to }) => {
-    io.to(from.socketId).emit("call-accepted", { to });
-  });
-
-  socket.on("reject-call", ({ from }) => {
-    io.to(from.socketId).emit("call-rejected");
-  });
-
-  socket.on("hang-up", ({ to }) => {
-    io.to(to.socketId).emit("hang-up");
-  });
-
-  socket.on("disconnect", () => {
-  console.log("🔌 Disconnect from:", socket.id);
-
-  const userId = socket.userId; // ✅ Directly use stored userId
-  if (userId) {
-    console.log("🔌 User disconnected:", userId);
-    delete connectedUsers[userId];
-    updateUserStatus(userId, false); // Set offline and lastSeen
-  } else {
-    console.log("🔌 Unknown socket disconnected:", socket.id);
-  }
-});
-
-
-});
-
-
-// post http://localhost:8000/api/auth/register
-// post http://localhost:8000/api/auth/login
-
-// get  http://localhost:8000/api/sample/users
-// get http://localhost:8000/api/sample/users/e0c73602-e3bb-44a9-a02b-8a6404fb7e46

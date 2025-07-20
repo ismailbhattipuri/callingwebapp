@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const { getSampleData, getAllUsers, getUserById } = require("../controllers/sampleController");
+const {
+  getSampleData,
+  getAllUsers,
+  getUserById,
+} = require("../controllers/users");
 
 router.get("/", getSampleData); // returns full db
 router.get("/users", getAllUsers);

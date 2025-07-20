@@ -7,7 +7,7 @@
       "password": "123",
       "avatar": "https://i.pravatar.cc/100?img=2",
       "isOnline": true,
-      "lastSeen": "2025-07-18T13:07:17.853Z",
+      "lastSeen": "2025-07-19T19:13:53.341Z",
       "createdAt": "2025-07-18T11:03:43.175Z"
     },
     {
@@ -17,7 +17,7 @@
       "password": "123",
       "avatar": "https://i.pravatar.cc/100?img=2",
       "isOnline": true,
-      "lastSeen": "2025-07-18T13:11:10.756Z",
+      "lastSeen": "2025-07-19T19:19:51.587Z",
       "createdAt": "2025-07-18T11:58:17.514Z"
     },
     {
@@ -26,9 +26,19 @@
       "email": "i3@gmail.com",
       "password": "123",
       "avatar": "https://i.pravatar.cc/100?img=2",
-      "isOnline": false,
-      "lastSeen": "2025-07-18T12:13:10.243Z",
+      "isOnline": true,
+      "lastSeen": "2025-07-19T14:15:04.924Z",
       "createdAt": "2025-07-18T12:09:27.319Z"
+    },
+    {
+      "_id": "d4772364-5dd0-4844-a857-8282275c4fd4",
+      "name": "Ismail4 B",
+      "email": "ismail4@gmail.com",
+      "password": "123",
+      "avatar": "https://i.pravatar.cc/100?img=2",
+      "isOnline": true,
+      "lastSeen": "2025-07-19T06:35:59.414Z",
+      "createdAt": "2025-07-19T06:35:47.562Z"
     }
   ]
 }

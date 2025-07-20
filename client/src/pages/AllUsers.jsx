@@ -1,15 +1,23 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { formatDistanceToNow } from 'date-fns';
+import { useApi } from "../context/ApiContext";
+
 
 const AllUsers = () => {
     const [users, setUsers] = useState([]);
-
+      const { baseURL } = useApi();
+    const curUser = JSON.parse(sessionStorage.getItem("user"));
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await axios.get("http://localhost:8000/api/sample/users");
-                setUsers(response.data);
+                const response = await axios.get(`${baseURL}/user/users`);
+                if (curUser) {
+                    const filteredUsers = response.data.filter(user => user._id !== curUser._id);
+                    setUsers(filteredUsers);
+                } else {
+                    setUsers(response.data);
+                }
             } catch (error) {
                 console.error("Failed to fetch users:", error);
             }
@@ -17,8 +25,6 @@ const AllUsers = () => {
 
         fetchUsers();
     }, []);
-
-    
 
     return (
         <div className="p-4">

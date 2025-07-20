@@ -46,4 +46,5 @@ const getUserById = (req, res) => {
 };
 
 
+
 module.exports = { getSampleData, getAllUsers, getUserById };
